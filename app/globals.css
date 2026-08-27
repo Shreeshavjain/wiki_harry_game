@@ -1,26 +1,421 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* ============================================
+   THEME TOKENS — from the original design
+   ============================================ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-night-1: #080a14;
+  --color-night-2: #10152b;
+  --color-parchment: #efe4c9;
+  --color-parchment-dim: #cdbd93;
+  --color-gold: #c9a227;
+  --color-gold-bright: #e8c968;
+
+  --font-cinzel: var(--font-cinzel-var);
+  --font-cinzel-decorative: var(--font-cinzel-decorative-var);
+  --font-garamond: var(--font-garamond-var);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================
+   BASE STYLES
+   ============================================ */
+:root {
+  --house-c1: var(--color-night-2);
+  --house-c2: var(--color-night-2);
+  --house-accent: var(--color-gold);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201, 162, 39, 0.10), transparent 45%),
+    radial-gradient(ellipse at 80% 85%, rgba(90, 40, 150, 0.14), transparent 50%),
+    linear-gradient(180deg, var(--color-night-1), var(--color-night-2) 60%, var(--color-night-1));
+  color: var(--color-parchment);
+  overflow-x: hidden;
+  transition: background 900ms ease;
+}
+
+body.revealed {
+  background:
+    radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--house-c2) 55%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--color-night-1), var(--color-night-2) 55%, var(--color-night-1));
+}
+
+/* ============================================
+   STARFIELD
+   ============================================ */
+.stars-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--color-gold-bright);
+  border-radius: 50%;
+  opacity: 0.2;
+  animation: twinkle 3.5s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.65; }
+}
+
+/* ============================================
+   SORTING HAT
+   ============================================ */
+.hat-wrap {
+  width: 170px;
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.hat-wrap svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.55));
+}
+
+.hat-wrap.thinking svg {
+  animation: hat-shake 0.42s ease-in-out infinite;
+}
+
+@keyframes hat-shake {
+  0%, 100% { transform: rotate(0) translateY(0); }
+  20% { transform: rotate(-4deg) translateY(-2px); }
+  50% { transform: rotate(3deg); }
+  80% { transform: rotate(-2deg) translateY(-1px); }
+}
+
+.glow-ring {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 162, 39, 0.35), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.hat-wrap.thinking .glow-ring {
+  opacity: 1;
+  animation: pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(0.9); }
+  50% { transform: scale(1.08); }
+}
+
+/* ============================================
+   CONFETTI
+   ============================================ */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 14px;
+  opacity: 0.9;
+  animation: confetti-fall linear forwards;
+}
+
+@keyframes confetti-fall {
+  to {
+    transform: translateY(110vh) rotate(540deg);
+    opacity: 0.2;
+  }
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+.magic-input {
+  width: 100%;
+  max-width: 320px;
+  background: rgba(239, 228, 201, 0.06);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  color: var(--color-parchment);
+  font-family: var(--font-garamond);
+  font-size: 1.02rem;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.magic-input::placeholder {
+  color: rgba(239, 228, 201, 0.42);
+}
+
+.magic-input:focus {
+  border-color: var(--color-gold-bright);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+}
+
+.btn-magic {
+  font-family: var(--font-cinzel);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.92rem;
+  background: linear-gradient(180deg, var(--color-gold-bright), var(--color-gold));
+  color: #1c1608;
+  border: none;
+  border-radius: 999px;
+  padding: 15px 34px;
+  cursor: pointer;
+  box-shadow:
+    0 8px 24px rgba(201, 162, 39, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.15s, opacity 0.3s;
+}
+
+.btn-magic:active {
+  transform: scale(0.96);
+}
+
+.btn-magic:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.btn-ghost {
+  font-family: var(--font-cinzel);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  background: transparent;
+  border: 1px solid rgba(239, 228, 201, 0.35);
+  color: var(--color-parchment-dim);
+  box-shadow: none;
+  padding: 10px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.btn-ghost:hover {
+  border-color: rgba(239, 228, 201, 0.55);
+  color: var(--color-parchment);
+}
+
+/* ============================================
+   TICKER
+   ============================================ */
+.sorting-ticker {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-cinzel-decorative);
+  font-weight: 700;
+  font-size: 1.3rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.sorting-ticker.visible {
+  opacity: 1;
+}
+
+.sorting-flavor {
+  font-style: italic;
+  color: var(--color-parchment-dim);
+  font-size: 0.9rem;
+  min-height: 22px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.sorting-flavor.visible {
+  opacity: 1;
+}
+
+/* ============================================
+   HOUSE REVEAL
+   ============================================ */
+.reveal-enter {
+  animation: reveal-in 0.7s ease both;
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.house-name-text {
+  font-family: var(--font-cinzel-decorative);
+  font-weight: 900;
+  font-size: 2.2rem;
+  background: linear-gradient(180deg, var(--house-accent), color-mix(in srgb, var(--house-accent) 60%, white 10%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.house-crest {
+  width: 120px;
+  height: 120px;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.5));
+}
+
+/* ============================================
+   ADMIN DASHBOARD
+   ============================================ */
+.admin-tile {
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-tile .tile-count {
+  font-family: var(--font-cinzel-decorative);
+  font-size: 1.7rem;
+  font-weight: 900;
+}
+
+.admin-tile .tile-label {
+  font-family: var(--font-cinzel);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.admin-table {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.admin-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-table tbody {
+  display: block;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.admin-table thead,
+.admin-table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.small-btn {
+  font-family: var(--font-cinzel);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  background: rgba(201, 162, 39, 0.08);
+  color: var(--color-gold-bright);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.small-btn:hover {
+  background: rgba(201, 162, 39, 0.15);
+}
+
+.small-btn.danger {
+  border-color: rgba(200, 60, 60, 0.5);
+  color: #ff8f8f;
+  background: rgba(200, 60, 60, 0.08);
+}
+
+.small-btn.danger:hover {
+  background: rgba(200, 60, 60, 0.15);
+}
+
+/* ============================================
+   MODAL
+   ============================================ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.modal-box {
+  background: #151a30;
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 320px;
+  text-align: center;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+.eyebrow {
+  font-family: var(--font-cinzel);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  color: var(--color-gold);
+  opacity: 0.85;
+}
+
+.roster-box {
+  width: 100%;
+  max-width: 340px;
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(239, 228, 201, 0.03);
+}
+
+/* QR panel */
+.qr-panel {
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 26px;
 }
