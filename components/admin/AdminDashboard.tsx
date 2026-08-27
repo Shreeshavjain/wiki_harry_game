@@ -1,21 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { HouseName } from "@/lib/models/participant";
 import type { HouseCounts } from "@/lib/models/round";
 import { HOUSE_ORDER } from "@/lib/houses";
 import HouseTile from "@/components/admin/HouseTile";
 import ParticipantTable from "@/components/admin/ParticipantTable";
-import QRGenerator from "@/components/admin/QRGenerator";
 import ResetModal from "@/components/admin/ResetModal";
 import Link from "next/link";
-
-interface Participant {
-  name: string;
-  usn: string;
-}
-
-type ParticipantsByHouse = Record<HouseName, Participant[]>;
+import GameStatus from "@/components/admin/GameStatus";
+import LiveScoreboard from "@/components/admin/LiveScoreboard";
 
 /**
  * Admin Dashboard — shows house stats, participant tables,
@@ -23,25 +17,17 @@ type ParticipantsByHouse = Record<HouseName, Participant[]>;
  */
 export default function AdminDashboard() {
   const [roundNumber, setRoundNumber] = useState(1);
-  const [counts, setCounts] = useState<HouseCounts>({
-    gryffindor: 0,
-    slytherin: 0,
-    ravenclaw: 0,
-    hufflepuff: 0,
-  });
-  const [participants, setParticipants] = useState<ParticipantsByHouse>({
-    gryffindor: [],
-    slytherin: [],
-    ravenclaw: [],
-    hufflepuff: [],
-  });
+  const [gameState, setGameState] = useState("WAITING");
+  const [questionCount, setQuestionCount] = useState(0);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetting, setResetting] = useState(false);
-
-  const totalCount = HOUSE_ORDER.reduce((sum, h) => sum + (counts[h] ?? 0), 0);
+  const [uploading, setUploading] = useState(false);
+  const [starting, setStarting] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -63,15 +49,8 @@ export default function AdminDashboard() {
       }
 
       setRoundNumber(data.roundNumber ?? 1);
-      setCounts(data.counts ?? { gryffindor: 0, slytherin: 0, ravenclaw: 0, hufflepuff: 0 });
-      setParticipants(
-        data.participants ?? {
-          gryffindor: [],
-          slytherin: [],
-          ravenclaw: [],
-          hufflepuff: [],
-        }
-      );
+      setGameState(data.gameState ?? "WAITING");
+      setQuestionCount(data.questionCount ?? 0);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Unable to load roster. Please refresh."
@@ -96,7 +75,8 @@ export default function AdminDashboard() {
       }
 
       setShowResetModal(false);
-      await loadData();
+      // Wait a moment then load to allow server state to fully commit
+      setTimeout(() => loadData(), 500);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Unable to start new round.");
     } finally {
@@ -113,32 +93,70 @@ export default function AdminDashboard() {
     window.location.reload();
   }
 
-  // Filter participants by search query
-  function getFilteredParticipants(house: HouseName): Participant[] {
-    const list = participants[house] ?? [];
-    if (!search.trim()) return list;
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const q = search.trim().toLowerCase();
-    return list.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.usn.toLowerCase().includes(q)
-    );
+    if (!confirm("Are you sure you want to upload these questions? This will replace any existing questions for this round.")) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/admin/questions/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to upload questions");
+      }
+
+      alert(data.message);
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleStartQuiz() {
+    if (!confirm("Are you sure you want to START THE QUIZ? This action cannot be undone.")) return;
+    
+    setStarting(true);
+    try {
+      const res = await fetch("/api/admin/quiz/start", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start quiz");
+      
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Start failed");
+    } finally {
+      setStarting(false);
+    }
   }
 
   return (
-    <div className="max-w-[920px] mx-auto w-full px-4 py-6 pb-15">
+    <div className="max-w-[1000px] mx-auto w-full px-4 py-6 pb-20">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2.5 mb-5">
-        <h2 className="font-[family-name:var(--font-cinzel)] text-[1.15rem] tracking-[0.05em] m-0">
-          🗝️ Sorting Portal — Admin Dashboard
+      <div className="flex items-center justify-between flex-wrap gap-2.5 mb-6 border-b border-white/10 pb-4">
+        <h2 className="font-[family-name:var(--font-cinzel)] text-[1.4rem] tracking-[0.1em] text-gold-bright m-0">
+          CONTROL ROOM
         </h2>
         <div className="flex gap-3 items-center">
           <Link
             href="/"
             className="text-parchment-dim text-[0.82rem] no-underline hover:text-parchment transition-colors"
           >
-            ← Back to Sorting Portal
+            ← Back to Portal
           </Link>
           <button
             className="small-btn text-[0.68rem]"
@@ -150,68 +168,86 @@ export default function AdminDashboard() {
       </div>
 
       {loading && !error && (
-        <p className="text-parchment-dim text-[0.85rem] opacity-60">
-          Loading roster…
-        </p>
+        <div className="flex items-center justify-center py-20">
+          <p className="text-parchment-dim text-[0.95rem] opacity-70 animate-pulse font-[family-name:var(--font-cinzel)] tracking-widest">
+            Loading Control Room Data…
+          </p>
+        </div>
       )}
 
       {error && (
-        <p className="text-[#ff8f8f] text-[0.85rem]">{error}</p>
+        <div className="bg-red-900/30 border border-red-500/50 rounded-lg p-4 mb-6">
+          <p className="text-[#ff8f8f] text-[0.9rem] m-0">{error}</p>
+        </div>
       )}
 
       {!loading && !error && (
         <>
-          {/* House tiles */}
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3 mb-5">
-            {HOUSE_ORDER.map((h) => (
-              <HouseTile key={h} house={h} count={counts[h] ?? 0} />
-            ))}
-          </div>
+          {/* Section 3: Game Status */}
+          <GameStatus 
+            roundNumber={roundNumber} 
+            gameState={gameState} 
+            questionCount={questionCount} 
+          />
 
-          <p className="text-[0.85rem] text-parchment-dim -mt-2.5 mb-5">
-            Total sorted:{" "}
-            <strong className="text-gold-bright">{totalCount}</strong> · Round{" "}
-            <span>{roundNumber}</span>
-          </p>
-
-          {/* Toolbar */}
-          <div className="flex gap-2.5 flex-wrap mb-4 items-center">
-            <input
-              type="text"
-              className="magic-input text-left max-w-[220px] !py-2.5 !px-3 !text-[0.92rem] m-0"
-              placeholder="Search name or USN…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              id="searchInput"
-            />
-            <button className="small-btn" onClick={handleExport}>
-              ⬇ Export CSV
-            </button>
-            <button className="small-btn" onClick={loadData}>
-              ↻ Refresh
-            </button>
-            <button
-              className="small-btn danger"
-              onClick={() => setShowResetModal(true)}
-            >
-              ⟲ New Round (reset all)
-            </button>
-          </div>
-
-          {/* Participant tables */}
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
-            {HOUSE_ORDER.map((h) => (
-              <ParticipantTable
-                key={h}
-                house={h}
-                participants={getFilteredParticipants(h)}
-                count={counts[h] ?? 0}
+          {/* Section 4: Individual Player Contribution */}
+          <div className="mb-8">
+            <h3 className="font-[family-name:var(--font-cinzel)] text-[1.1rem] tracking-[0.1em] text-gold-dim mb-4 border-b border-white/5 pb-2">
+              PLAYER CONTRIBUTION
+            </h3>
+            
+            {/* Section 5: Admin Controls Toolbar */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-5 items-center justify-between bg-black/20 p-3 rounded-lg border border-white/5">
+              <input
+                type="text"
+                className="magic-input text-left w-full sm:max-w-[280px] !py-2 !px-3 !text-[0.85rem] m-0"
+                placeholder="Search participant name or USN…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                id="searchInput"
               />
-            ))}
-          </div>
+              <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar items-center">
+                <input 
+                  type="file" 
+                  accept=".csv" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  onChange={handleFileUpload} 
+                />
+                <button 
+                  className="small-btn whitespace-nowrap bg-blue-900/50 border-blue-500/50 hover:bg-blue-800/80" 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || gameState === "LIVE" || gameState === "COMPLETED"}
+                >
+                  {uploading ? "Uploading..." : "⬆ UPLOAD QUESTIONS"}
+                </button>
+                <button 
+                  className="small-btn whitespace-nowrap bg-[#39ff14]/20 border-[#39ff14]/50 text-[#39ff14] hover:bg-[#39ff14]/40 font-bold" 
+                  onClick={handleStartQuiz}
+                  disabled={starting || gameState !== "QUESTIONS_READY"}
+                >
+                  {starting ? "..." : "▶ START QUIZ"}
+                </button>
+                <div className="w-px h-6 bg-white/20 mx-1"></div>
+                <button className="small-btn whitespace-nowrap" onClick={loadData}>
+                  ↻
+                </button>
+                <button className="small-btn whitespace-nowrap" onClick={handleExport}>
+                  ⬇ CSV
+                </button>
+                <button
+                  className="small-btn danger whitespace-nowrap"
+                  onClick={() => setShowResetModal(true)}
+                >
+                  ⟲ New Round
+                </button>
+              </div>
+            </div>
 
-          {/* QR Generator */}
-          <QRGenerator />
+            <div className="grid grid-cols-1 gap-1">
+              <LiveScoreboard searchQuery={search} />
+            </div>
+          </div>
         </>
       )}
 

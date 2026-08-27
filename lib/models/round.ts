@@ -1,6 +1,7 @@
 import mongoose, { Schema, type InferSchemaType } from "mongoose";
 
 const ROUND_STATUSES = ["active", "completed"] as const;
+const GAME_STATES = ["WAITING", "QUESTIONS_READY", "LIVE", "COMPLETED"] as const;
 
 const countsSchema = new Schema(
   {
@@ -28,6 +29,15 @@ const roundSchema = new Schema(
         message: "{VALUE} is not a valid status",
       },
       default: "active",
+    },
+    gameState: {
+      type: String,
+      required: true,
+      enum: {
+        values: GAME_STATES,
+        message: "{VALUE} is not a valid game state",
+      },
+      default: "WAITING",
     },
     counts: {
       type: countsSchema,
