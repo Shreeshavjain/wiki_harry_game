@@ -81,6 +81,8 @@ export default function SortingPortal({
       setAssignedHouse(data.house as HouseName);
       setCounts(data.counts);
 
+      localStorage.setItem("wiki_game_player", JSON.stringify({ name, usn }));
+
       if (data.isReturning) {
         setIsReturning(true);
         setPlayerName(data.storedName || name);

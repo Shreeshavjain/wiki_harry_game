@@ -36,7 +36,7 @@ const participantSchema = new Schema(
     quizState: {
       type: new Schema({
         score: { type: Number, default: 0 },
-        // Future quiz schema fields can be added here (e.g. answeredQuestions array)
+        answeredQuestions: { type: [Number], default: [] },
       }, { _id: false }),
       default: () => ({}),
     },

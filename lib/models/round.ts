@@ -1,7 +1,7 @@
 import mongoose, { Schema, type InferSchemaType } from "mongoose";
 
 const ROUND_STATUSES = ["active", "completed"] as const;
-const GAME_STATES = ["WAITING", "QUESTIONS_READY", "LIVE", "COMPLETED"] as const;
+const GAME_STATES = ["WAITING", "QUESTIONS_READY", "LIVE", "PAUSED", "RESTARTED", "COMPLETED"] as const;
 
 const countsSchema = new Schema(
   {
@@ -48,6 +48,11 @@ const roundSchema = new Schema(
         hufflepuff: 0,
       }),
     },
+    currentQuestion: { type: Number, default: 0 },
+    questionStartedAt: { type: Date, default: null },
+    questionEndsAt: { type: Date, default: null },
+    frozenRemainingMs: { type: Number, default: 0 },
+    quizAttempt: { type: Number, default: 1 },
   },
   {
     timestamps: true,

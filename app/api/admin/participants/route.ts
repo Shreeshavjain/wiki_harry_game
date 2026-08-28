@@ -42,14 +42,40 @@ export async function GET(request: Request) {
       });
     }
 
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search") || "";
+
     const questionCount = await Question.countDocuments({ round: round.roundNumber });
 
-    // Fetch all participants for the active round, sorted by creation time
-    const participants = await Participant.find({
-      round: round.roundNumber,
-    }).sort({ createdAt: 1 });
+    // Build the query to filter by round
+    const query: any = { round: round.roundNumber };
+    if (search.trim() !== "") {
+      const q = search.trim();
+      query.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { usn: { $regex: q, $options: "i" } },
+      ];
+    }
 
-    // Group by house
+    // Fetch all participants for the active round, sorted by creation time
+    const participants = await Participant.find(query).sort({ createdAt: 1 });
+
+    // We need all participants to compute total house scores correctly.
+    // If we only fetched searched participants, the scoreboard totals would drop.
+    const allParticipants = await Participant.find({ round: round.roundNumber }, { house: 1, 'quizState.score': 1 });
+    const houseScores: Record<HouseName, number> = {
+      gryffindor: 0,
+      slytherin: 0,
+      ravenclaw: 0,
+      hufflepuff: 0,
+    };
+    for (const p of allParticipants) {
+      const house = p.house as HouseName;
+      const score = p.quizState?.score ?? 0;
+      houseScores[house] += score;
+    }
+
+    // Now group the filtered participants
     const grouped: Record<HouseName, Array<{ name: string; usn: string; createdAt: Date; score: number }>> = {
       gryffindor: [],
       slytherin: [],
@@ -57,19 +83,10 @@ export async function GET(request: Request) {
       hufflepuff: [],
     };
 
-    const houseScores: Record<HouseName, number> = {
-      gryffindor: 0,
-      slytherin: 0,
-      ravenclaw: 0,
-      hufflepuff: 0,
-    };
-
     for (const p of participants) {
       const house = p.house as HouseName;
       const score = p.quizState?.score ?? 0;
       
-      houseScores[house] += score;
-
       if (grouped[house]) {
         grouped[house].push({
           name: p.name,

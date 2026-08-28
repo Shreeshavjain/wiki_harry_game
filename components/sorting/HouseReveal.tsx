@@ -75,9 +75,15 @@ export default function HouseReveal({
         </div>
       </div>
 
-      <button className="btn-ghost" onClick={onSortAnother}>
-        Sort the Next Participant
-      </button>
+      <div className="flex w-full max-w-[320px]">
+        <button 
+          className="btn-primary w-full" 
+          onClick={() => window.location.href = "/quiz"}
+          style={{ background: h.c2, color: '#f2ead2' }}
+        >
+          Enter the Quiz
+        </button>
+      </div>
     </div>
   );
 }

@@ -43,6 +43,10 @@ const questionSchema = new Schema(
         message: "{VALUE} is not a valid correct option",
       },
     },
+    correctAnswersCount: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

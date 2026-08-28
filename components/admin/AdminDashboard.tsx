@@ -144,6 +144,44 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handlePauseQuiz() {
+    try {
+      const res = await fetch("/api/admin/quiz/pause", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to pause quiz");
+      
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Pause failed");
+    }
+  }
+
+  async function handleResumeQuiz() {
+    try {
+      const res = await fetch("/api/admin/quiz/resume", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to resume quiz");
+      
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Resume failed");
+    }
+  }
+
+  async function handleRestartQuiz() {
+    if (!confirm("RESTART QUIZ?\n\nThis will restart the current quiz.\nParticipants and House assignments will remain unchanged.\nQuiz scores and progress will be reset.\nQuestion 1 will start again.")) return;
+    
+    try {
+      const res = await fetch("/api/admin/quiz/restart", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to restart quiz");
+      
+      await loadData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Restart failed");
+    }
+  }
+
   return (
     <div className="max-w-[1000px] mx-auto w-full px-4 py-6 pb-20">
       {/* Header */}
@@ -217,17 +255,49 @@ export default function AdminDashboard() {
                 <button 
                   className="small-btn whitespace-nowrap bg-blue-900/50 border-blue-500/50 hover:bg-blue-800/80" 
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading || gameState === "LIVE" || gameState === "COMPLETED"}
+                  disabled={uploading || gameState === "LIVE" || gameState === "COMPLETED" || gameState === "PAUSED"}
                 >
                   {uploading ? "Uploading..." : "⬆ UPLOAD QUESTIONS"}
                 </button>
-                <button 
-                  className="small-btn whitespace-nowrap bg-[#39ff14]/20 border-[#39ff14]/50 text-[#39ff14] hover:bg-[#39ff14]/40 font-bold" 
-                  onClick={handleStartQuiz}
-                  disabled={starting || gameState !== "QUESTIONS_READY"}
-                >
-                  {starting ? "..." : "▶ START QUIZ"}
-                </button>
+                {gameState === "PAUSED" ? (
+                  <>
+                    <button 
+                      className="small-btn whitespace-nowrap bg-[#39ff14]/20 border-[#39ff14]/50 text-[#39ff14] hover:bg-[#39ff14]/40 font-bold" 
+                      onClick={handleResumeQuiz}
+                    >
+                      ▶ RESUME QUIZ
+                    </button>
+                    <button 
+                      className="small-btn danger whitespace-nowrap" 
+                      onClick={handleRestartQuiz}
+                    >
+                      ↺ RESTART QUIZ
+                    </button>
+                  </>
+                ) : gameState === "LIVE" ? (
+                  <>
+                    <button 
+                      className="small-btn whitespace-nowrap bg-orange-900/50 border-orange-500/50 text-orange-400 hover:bg-orange-800/80 font-bold" 
+                      onClick={handlePauseQuiz}
+                    >
+                      ⏸ PAUSE QUIZ
+                    </button>
+                    <button 
+                      className="small-btn danger whitespace-nowrap" 
+                      onClick={handleRestartQuiz}
+                    >
+                      ↺ RESTART QUIZ
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    className="small-btn whitespace-nowrap bg-[#39ff14]/20 border-[#39ff14]/50 text-[#39ff14] hover:bg-[#39ff14]/40 font-bold" 
+                    onClick={handleStartQuiz}
+                    disabled={starting || (gameState !== "QUESTIONS_READY" && gameState !== "RESTARTED")}
+                  >
+                    {starting ? "..." : "▶ START QUIZ"}
+                  </button>
+                )}
                 <div className="w-px h-6 bg-white/20 mx-1"></div>
                 <button className="small-btn whitespace-nowrap" onClick={loadData}>
                   ↻

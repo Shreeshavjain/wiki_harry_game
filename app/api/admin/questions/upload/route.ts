@@ -4,6 +4,7 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import Round from "@/lib/models/round";
 import Question from "@/lib/models/question";
 import Papa from "papaparse";
+import { startSession } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
@@ -42,15 +43,7 @@ export async function POST(request: Request) {
       const row = rows[i];
       const rowNum = i + 2; // +1 for header, +1 for 0-index
 
-      const qNum = parseInt(row.question_number, 10);
-      if (isNaN(qNum)) {
-        errors.push(`Row ${rowNum}: question_number must be a number`);
-        continue;
-      }
-      if (seenNumbers.has(qNum)) {
-        errors.push(`Row ${rowNum}: Duplicate question_number ${qNum}`);
-      }
-      seenNumbers.add(qNum);
+      const qNum = i + 1; // Explicit sequential numbering based on row order
 
       if (!row.question?.trim()) errors.push(`Row ${rowNum}: question is missing`);
       if (!row.option_a?.trim()) errors.push(`Row ${rowNum}: option_a is missing`);
@@ -93,15 +86,22 @@ export async function POST(request: Request) {
     const roundNumber = round.roundNumber;
     questionsToInsert.forEach((q) => (q.round = roundNumber));
 
-    // Delete old questions for this round
-    await Question.deleteMany({ round: roundNumber });
+    const session = await startSession();
+    try {
+      await session.withTransaction(async () => {
+        // Delete old questions for this round
+        await Question.deleteMany({ round: roundNumber }, { session });
 
-    // Insert new questions
-    await Question.insertMany(questionsToInsert);
+        // Insert new questions
+        await Question.insertMany(questionsToInsert, { session });
 
-    // Update game state
-    round.gameState = "QUESTIONS_READY";
-    await round.save();
+        // Update game state
+        round.gameState = "QUESTIONS_READY";
+        await round.save({ session });
+      });
+    } finally {
+      await session.endSession();
+    }
 
     return NextResponse.json({
       success: true,

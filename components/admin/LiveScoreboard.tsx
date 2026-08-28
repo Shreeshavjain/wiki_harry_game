@@ -42,7 +42,11 @@ export default function LiveScoreboard({ searchQuery }: LiveScoreboardProps) {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/participants");
+      const url = new URL("/api/admin/participants", window.location.origin);
+      if (searchQuery.trim()) {
+        url.searchParams.set("search", searchQuery.trim());
+      }
+      const res = await fetch(url.toString());
       if (!res.ok) return;
       const data = await res.json();
       
@@ -79,12 +83,7 @@ export default function LiveScoreboard({ searchQuery }: LiveScoreboardProps) {
   const totalCount = HOUSE_ORDER.reduce((sum, h) => sum + (counts[h] ?? 0), 0);
 
   function getFilteredParticipants(house: HouseName): Participant[] {
-    const list = participants[house] ?? [];
-    if (!searchQuery.trim()) return list;
-    const q = searchQuery.trim().toLowerCase();
-    return list.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.usn.toLowerCase().includes(q)
-    );
+    return participants[house] ?? [];
   }
 
   return (

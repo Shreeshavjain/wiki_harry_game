@@ -9,6 +9,17 @@ interface GameStatusProps {
 export default function GameStatus({ roundNumber, gameState, questionCount }: GameStatusProps) {
   // Placeholder for real-time quiz status
   // When quiz engine is implemented, this will show current question, time remaining, etc.
+  let statusColor = "text-parchment-dim";
+  let statusText = gameState;
+
+  if (gameState === "PAUSED") {
+    statusColor = "text-orange-400";
+    statusText = "QUIZ PAUSED";
+  } else if (gameState === "RESTARTED") {
+    statusColor = "text-[#ff8f8f]";
+    statusText = "RESTARTED - READY TO START";
+  }
+
   return (
     <div className="flex items-center justify-between bg-black/40 border border-white/10 rounded-lg px-5 py-4 mb-6 backdrop-blur-md">
       <div className="flex items-center gap-4">
