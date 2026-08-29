@@ -6,6 +6,8 @@ import Participant from "@/lib/models/participant";
 
 import Answer from "@/lib/models/answer";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await connectDB();
@@ -121,6 +123,56 @@ export async function GET() {
       }
     }
 
+    // --- PROJECTOR DISPLAY RACE DATA ---
+    const projectorDisplay = round.projectorDisplay || { mode: "NORMAL", selectedHouse: null };
+    let houseRaceData: { house: string; points: number }[] | undefined;
+    let houseDetailsData: { name: string; usn: string; score: number }[] | undefined;
+    let houseDetailsTotal: number | undefined;
+    let individualRaceData: { name: string; usn: string; house: string; score: number }[] | undefined;
+
+    if (projectorDisplay.mode === "HOUSE_RACE" || projectorDisplay.mode === "HOUSE_DETAILS") {
+      // Cumulative house scores: aggregate Answer.pointsAwarded grouped by participant house
+      const houseAgg = await Answer.aggregate([
+        { $match: { round: round.roundNumber, questionNumber: { $lte: round.currentQuestion } } },
+        { $lookup: { from: "participants", localField: "participantId", foreignField: "_id", as: "participant" } },
+        { $unwind: "$participant" },
+        { $group: { _id: "$participant.house", points: { $sum: "$pointsAwarded" } } },
+      ]);
+      houseRaceData = ["gryffindor", "slytherin", "ravenclaw", "hufflepuff"].map(h => ({
+        house: h,
+        points: houseAgg.find((a: { _id: string; points: number }) => a._id === h)?.points || 0,
+      }));
+
+      if (projectorDisplay.mode === "HOUSE_DETAILS" && projectorDisplay.selectedHouse) {
+        // All members of the selected house, sorted by cumulative score descending
+        const members = await Participant.find({
+          round: round.roundNumber,
+          house: projectorDisplay.selectedHouse,
+        }).sort({ "quizState.score": -1 }).lean();
+
+        houseDetailsData = members.map((m: any) => ({
+          name: m.name,
+          usn: m.usn,
+          score: m.quizState?.score || 0,
+        }));
+        houseDetailsTotal = houseDetailsData.reduce((sum, m) => sum + m.score, 0);
+      }
+    }
+
+    if (projectorDisplay.mode === "INDIVIDUAL_RACE") {
+      // All participants sorted by cumulative score descending
+      const participants = await Participant.find({
+        round: round.roundNumber,
+      }).sort({ "quizState.score": -1 }).lean();
+
+      individualRaceData = participants.map((p: any) => ({
+        name: p.name,
+        usn: p.usn,
+        house: p.house,
+        score: p.quizState?.score || 0,
+      }));
+    }
+
     return NextResponse.json({
       gameState: round.gameState,
       currentQuestion: round.currentQuestion,
@@ -130,9 +182,13 @@ export async function GET() {
       questionData,
       counts: round.counts,
       totalParticipants,
+      projectorDisplay,
       ...(histogram && { histogram }),
       ...(fastestAnswers && { fastestAnswers }),
-      ...(questionHousePoints && { questionHousePoints })
+      ...(questionHousePoints && { questionHousePoints }),
+      ...(houseRaceData && { houseRaceData }),
+      ...(houseDetailsData && { houseDetailsData, houseDetailsTotal, houseDetailsHouse: projectorDisplay.selectedHouse }),
+      ...(individualRaceData && { individualRaceData }),
     });
   } catch (error) {
     console.error("Projector state error:", error);

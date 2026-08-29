@@ -2,6 +2,16 @@ import mongoose, { Schema, type InferSchemaType } from "mongoose";
 
 const ROUND_STATUSES = ["active", "completed"] as const;
 const GAME_STATES = ["WAITING", "QUESTIONS_READY", "LIVE", "PAUSED", "TIME_UP", "REVEAL", "RESTARTED", "COMPLETED"] as const;
+const PROJECTOR_MODES = ["NORMAL", "HOUSE_RACE", "HOUSE_DETAILS", "INDIVIDUAL_RACE"] as const;
+const HOUSE_NAMES_ENUM = ["gryffindor", "slytherin", "ravenclaw", "hufflepuff"] as const;
+
+const projectorDisplaySchema = new Schema(
+  {
+    mode: { type: String, enum: PROJECTOR_MODES, default: "NORMAL" },
+    selectedHouse: { type: String, enum: [...HOUSE_NAMES_ENUM, null], default: null },
+  },
+  { _id: false }
+);
 
 const countsSchema = new Schema(
   {
@@ -53,6 +63,10 @@ const roundSchema = new Schema(
     questionEndsAt: { type: Date, default: null },
     frozenRemainingMs: { type: Number, default: 0 },
     quizAttempt: { type: Number, default: 1 },
+    projectorDisplay: {
+      type: projectorDisplaySchema,
+      default: () => ({ mode: "NORMAL", selectedHouse: null }),
+    },
   },
   {
     timestamps: true,
@@ -63,13 +77,16 @@ const roundSchema = new Schema(
 roundSchema.index({ status: 1 });
 
 export type HouseCounts = InferSchemaType<typeof countsSchema>;
+export type ProjectorDisplay = InferSchemaType<typeof projectorDisplaySchema>;
 
 export type RoundDocument = InferSchemaType<typeof roundSchema> & {
   _id: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 };
-
-const Round = mongoose.models.Round || mongoose.model("Round", roundSchema);
+if (mongoose.models.Round) {
+  delete mongoose.models.Round;
+}
+const Round = mongoose.model("Round", roundSchema);
 
 export default Round;

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { HouseName } from "@/lib/models/participant";
 import type { HouseCounts } from "@/lib/models/round";
-import { HOUSE_ORDER } from "@/lib/houses";
+import { HOUSE_ORDER, HOUSES } from "@/lib/houses";
 import HouseTile from "@/components/admin/HouseTile";
 import ParticipantTable from "@/components/admin/ParticipantTable";
 import ResetModal from "@/components/admin/ResetModal";
@@ -33,6 +33,10 @@ export default function AdminDashboard() {
   // Live Game State (polled frequently for timer/question)
   const [adminQuizState, setAdminQuizState] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  // Projector Display State (synced from server via polling)
+  const [projectorMode, setProjectorMode] = useState("NORMAL");
+  const [projectorSelectedHouse, setProjectorSelectedHouse] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -66,6 +70,11 @@ export default function AdminDashboard() {
         // Update the main gameState to keep things somewhat synced without heavy participant fetch
         if (data.gameState) {
            setGameState(data.gameState);
+        }
+        // Sync projector display state from server
+        if (data.projectorDisplay) {
+           setProjectorMode(data.projectorDisplay.mode || "NORMAL");
+           setProjectorSelectedHouse(data.projectorDisplay.selectedHouse || null);
         }
       }
     } catch (err) {}
@@ -235,6 +244,36 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleSetProjectorDisplay(mode: string, house?: string) {
+    console.log(`[PROJECTOR_DEBUG] Clicked. Mode: ${mode}, House: ${house}`);
+    try {
+      console.log("[PROJECTOR_DEBUG] Fetching /api/admin/projector/display...");
+      const res = await fetch("/api/admin/projector/display", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode, selectedHouse: house || null }),
+      });
+      console.log(`[PROJECTOR_DEBUG] Fetch returned status: ${res.status}`);
+      if (!res.ok) {
+        const data = await res.json();
+        console.error("[PROJECTOR_DEBUG] Fetch not ok. Data:", data);
+        throw new Error(data.error || "Failed to update projector display");
+      }
+      const data = await res.json();
+      console.log("[PROJECTOR_DEBUG] JSON parsed. Data:", data);
+      if (data.projectorDisplay) {
+        console.log("[PROJECTOR_DEBUG] Setting projector mode in state to:", data.projectorDisplay.mode);
+        setProjectorMode(data.projectorDisplay.mode || "NORMAL");
+        setProjectorSelectedHouse(data.projectorDisplay.selectedHouse || null);
+      } else {
+        console.log("[PROJECTOR_DEBUG] No projectorDisplay field in response data!");
+      }
+    } catch (err: any) {
+      console.error("[PROJECTOR_DEBUG] Error caught:", err);
+      alert("Projector Debug Error: " + err.message);
+    }
+  }
+
   return (
     <div className="max-w-[1000px] mx-auto w-full px-4 py-6 pb-20">
       {/* Header */}
@@ -367,14 +406,28 @@ export default function AdminDashboard() {
                   <div className="text-emerald-400 text-3xl font-bold font-[family-name:var(--font-cinzel)] tracking-widest drop-shadow-md py-4">
                     🎉 ANSWER REVEALED
                   </div>
-                  <button 
-                    className={`btn-magic text-xl py-4 px-12 mt-4 shadow-[0_0_25px_rgba(201,162,39,0.5)] ${advancing ? 'opacity-80 cursor-wait' : ''}`}
-                    onClick={handleNextQuestion}
-                    disabled={advancing}
-                  >
-                    {advancing ? "ADVANCING..." : "▶ NEXT QUESTION"}
-                  </button>
-                  <span className="text-sm text-parchment-dim mt-4">Proceed to the next question</span>
+                  {projectorMode !== "NORMAL" ? (
+                     <>
+                       <button 
+                         className="btn-magic text-xl py-4 px-12 mt-4 opacity-40 cursor-not-allowed"
+                         disabled
+                       >
+                         🔒 NEXT QUESTION
+                       </button>
+                       <span className="text-sm text-orange-400 mt-4">Hide the active projector display before continuing.</span>
+                     </>
+                   ) : (
+                     <>
+                       <button 
+                         className={`btn-magic text-xl py-4 px-12 mt-4 shadow-[0_0_25px_rgba(201,162,39,0.5)] ${advancing ? 'opacity-80 cursor-wait' : ''}`}
+                         onClick={handleNextQuestion}
+                         disabled={advancing}
+                       >
+                         {advancing ? "ADVANCING..." : "▶ NEXT QUESTION"}
+                       </button>
+                       <span className="text-sm text-parchment-dim mt-4">Proceed to the next question</span>
+                     </>
+                   )}
                 </div>
              ) : gameState === "PAUSED" ? (
                <div className="flex flex-col items-center">
@@ -387,6 +440,100 @@ export default function AdminDashboard() {
                <div className="text-parchment-dim italic">No primary action available</div>
              )}
           </div>
+
+          {/* SECTION C.5: PROJECTOR CONTROL */}
+          <div className="mb-8 bg-black/40 border border-white/20 rounded-xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+              <h3 className="font-[family-name:var(--font-cinzel)] text-[1rem] tracking-[0.1em] text-gold-dim m-0">
+                📺 PROJECTOR CONTROL
+              </h3>
+              <div className="text-sm font-bold tracking-widest">
+                {projectorMode === "HOUSE_RACE" ? (
+                  <span className="text-emerald-400">● LIVE HOUSE RACE — SHOWING ON PROJECTOR</span>
+                ) : projectorMode === "HOUSE_DETAILS" ? (
+                  <span className="text-emerald-400 uppercase">● HOUSE DETAILS — {projectorSelectedHouse} — SHOWING ON PROJECTOR</span>
+                ) : projectorMode === "INDIVIDUAL_RACE" ? (
+                  <span className="text-blue-400">● INDIVIDUAL RACE — SHOWING ON PROJECTOR</span>
+                ) : (
+                  <span className="text-parchment-dim">NORMAL DISPLAY</span>
+                )}
+              </div>
+            </div>
+
+              <div className="flex flex-wrap gap-3 mb-4">
+                {/* House Race Toggle */}
+                {projectorMode === "HOUSE_RACE" || projectorMode === "HOUSE_DETAILS" ? (
+                  <button
+                    className="small-btn bg-red-900/50 border-red-500/50 text-red-300 hover:bg-red-800/80 font-bold"
+                    onClick={() => handleSetProjectorDisplay("NORMAL")}
+                  >
+                    ✕ HIDE LIVE HOUSE RACE
+                  </button>
+                ) : (
+                  <button
+                    className="small-btn bg-emerald-900/50 border-emerald-500/50 text-emerald-300 hover:bg-emerald-800/80"
+                    onClick={() => handleSetProjectorDisplay("HOUSE_RACE")}
+                  >
+                    🏠 SHOW LIVE HOUSE RACE
+                  </button>
+                )}
+
+                {/* Individual Race Toggle */}
+                {projectorMode === "INDIVIDUAL_RACE" ? (
+                  <button
+                    className="small-btn bg-red-900/50 border-red-500/50 text-red-300 hover:bg-red-800/80 font-bold"
+                    onClick={() => handleSetProjectorDisplay("NORMAL")}
+                  >
+                    ✕ HIDE INDIVIDUAL RACE
+                  </button>
+                ) : (
+                  <button
+                    className="small-btn bg-blue-900/50 border-blue-500/50 text-blue-300 hover:bg-blue-800/80"
+                    onClick={() => handleSetProjectorDisplay("INDIVIDUAL_RACE")}
+                  >
+                    👤 SHOW INDIVIDUAL RACE
+                  </button>
+                )}
+              </div>
+
+              {/* House Selection — only when House Race is active */}
+              {(projectorMode === "HOUSE_RACE" || projectorMode === "HOUSE_DETAILS") && (
+                <div className="border-t border-white/10 pt-4">
+                  <span className="text-[0.65rem] tracking-[0.3em] uppercase text-parchment-dim mb-3 block">House Details</span>
+                  <div className="flex flex-wrap gap-3">
+                    {HOUSE_ORDER.map(house => {
+                      const h = HOUSES[house];
+                      const isSelected = projectorMode === "HOUSE_DETAILS" && projectorSelectedHouse === house;
+                      return (
+                        <button
+                          key={house}
+                          className={`small-btn font-bold tracking-wider transition-all ${
+                            isSelected
+                              ? 'ring-2 ring-offset-1 ring-offset-black scale-105'
+                              : 'opacity-80 hover:opacity-100'
+                          }`}
+                          style={{
+                            backgroundColor: `${h.c2}30`,
+                            borderColor: h.c2,
+                            color: h.c2,
+                            ...(isSelected ? { ringColor: h.c2 } : {}),
+                          }}
+                          onClick={() => {
+                            if (isSelected) {
+                              handleSetProjectorDisplay("HOUSE_RACE");
+                            } else {
+                              handleSetProjectorDisplay("HOUSE_DETAILS", house);
+                            }
+                          }}
+                        >
+                          {h.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
 
           {/* SECTION D: OTHER CONTROLS */}
           <div className="mb-8">

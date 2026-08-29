@@ -40,6 +40,7 @@ export async function GET() {
       questionStartedAt: round.questionStartedAt,
       questionEndsAt: round.questionEndsAt,
       questionData,
+      projectorDisplay: round.projectorDisplay || { mode: "NORMAL", selectedHouse: null },
     });
   } catch (error) {
     console.error("Admin quiz state error:", error);

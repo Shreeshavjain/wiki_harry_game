@@ -61,7 +61,8 @@ export async function POST(request: Request) {
               currentQuestion: 0,
               questionStartedAt: null,
               questionEndsAt: null,
-              frozenRemainingMs: 0
+              frozenRemainingMs: 0,
+              projectorDisplay: { mode: "NORMAL", selectedHouse: null },
             },
             $inc: {
               quizAttempt: 1

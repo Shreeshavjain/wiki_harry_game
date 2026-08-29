@@ -25,6 +25,12 @@ export interface ProjectorState {
   histogram?: Record<string, number>;
   fastestAnswers?: { rank: number; name: string; usn: string; house: HouseName; timeMs: number; points: number }[];
   questionHousePoints?: Record<string, number>;
+  projectorDisplay?: { mode: string; selectedHouse: string | null };
+  houseRaceData?: { house: string; points: number }[];
+  houseDetailsData?: { name: string; usn: string; score: number }[];
+  houseDetailsTotal?: number;
+  houseDetailsHouse?: string;
+  individualRaceData?: { name: string; usn: string; house: string; score: number }[];
 }
 
 export default function ProjectorApp() {
@@ -103,7 +109,184 @@ export default function ProjectorApp() {
       <StarField />
 
       <main className="relative z-10 w-full min-h-dvh flex flex-col items-center justify-center p-8 lg:p-16 max-w-[1600px] mx-auto">
-        
+
+        {/* === RACE DISPLAYS (override normal content when active) === */}
+        {state.projectorDisplay?.mode === "HOUSE_RACE" && state.houseRaceData && (
+          <div className="w-full max-w-6xl flex flex-col items-center animate-fade-in">
+            <h1 className="text-5xl md:text-7xl font-[family-name:var(--font-cinzel)] text-gold-bright drop-shadow-[0_0_20px_rgba(201,162,39,0.5)] mb-4 tracking-widest">
+              🏆 LIVE HOUSE RACE
+            </h1>
+            <p className="text-xl text-parchment-dim mb-16 tracking-widest">Cumulative scores through Question {state.currentQuestion}</p>
+            
+            {(() => {
+              const maxPts = Math.max(1, ...state.houseRaceData!.map(h => h.points));
+              const sorted = [...state.houseRaceData!].sort((a, b) => b.points - a.points);
+              return (
+                <div className="flex flex-col gap-8 w-full max-w-5xl">
+                  {sorted.map((entry, idx) => {
+                    const h = HOUSES[entry.house as HouseName];
+                    if (!h) return null;
+                    const pct = (entry.points / maxPts) * 100;
+                    return (
+                      <div key={entry.house} className="flex items-center gap-6 w-full">
+                        <div className="text-3xl font-[family-name:var(--font-cinzel)] text-gold-bright w-10 text-center tabular-nums">
+                          {idx + 1}
+                        </div>
+                        <div className="w-14 h-14 shrink-0">
+                          <svg viewBox="0 0 120 120" dangerouslySetInnerHTML={{ __html: h.crest }} className="w-full h-full drop-shadow-lg" />
+                        </div>
+                        <div className="w-36 shrink-0 font-[family-name:var(--font-cinzel)] font-bold text-2xl tracking-wider" style={{ color: h.c2 }}>
+                          {h.name}
+                        </div>
+                        <div className="flex-grow h-14 bg-black/60 rounded-lg overflow-hidden flex items-center border border-white/10 relative">
+                          <div 
+                            className="h-full transition-all duration-1000 ease-out rounded-r-md"
+                            style={{ width: `${Math.max(2, pct)}%`, backgroundColor: `${h.c2}90` }}
+                          />
+                        </div>
+                        <div className="w-24 shrink-0 text-right tabular-nums font-bold text-4xl drop-shadow-md" style={{ color: entry.points > 0 ? h.c2 : '#666' }}>
+                          {entry.points}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {state.projectorDisplay?.mode === "HOUSE_DETAILS" && state.houseDetailsData && state.houseDetailsHouse && (
+          <div className="w-full max-w-6xl flex flex-col items-center animate-fade-in">
+            {(() => {
+              const houseKey = (state.houseDetailsHouse || "gryffindor").toLowerCase() as HouseName;
+              const h = HOUSES[houseKey] || HOUSES["gryffindor"];
+              return (
+                <>
+                  <div className="flex items-center gap-6 mb-4">
+                    <div className="w-20 h-20">
+                      <svg viewBox="0 0 120 120" dangerouslySetInnerHTML={{ __html: h.crest }} className="w-full h-full drop-shadow-lg" />
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-[family-name:var(--font-cinzel)] tracking-widest drop-shadow-xl" style={{ color: h.c2 }}>
+                      {h.name}
+                    </h1>
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-12 tracking-widest">
+                    TOTAL: <span style={{ color: h.c2 }}>{state.houseDetailsTotal || 0}</span> POINTS
+                  </div>
+                  
+                  <div className="w-full glass-panel-premium p-8 md:p-12">
+                    <h3 className="text-2xl font-[family-name:var(--font-cinzel)] text-gold-bright mb-8 tracking-widest border-b border-white/10 pb-4">TOP CONTRIBUTORS</h3>
+                    {(() => {
+                      const members = state.houseDetailsData || [];
+                      // Split into columns of ~15 for readability on projector
+                      const COL_SIZE = 15;
+                      const columns: typeof members[] = [];
+                      for (let i = 0; i < members.length; i += COL_SIZE) {
+                        columns.push(members.slice(i, i + COL_SIZE));
+                      }
+                      let globalIdx = 0;
+                      return (
+                        <div className="flex gap-8 w-full overflow-x-auto">
+                          {columns.map((col, colIdx) => (
+                            <div key={colIdx} className="flex-1 min-w-[300px]">
+                              <table className="w-full text-left">
+                                <thead className="text-parchment-dim text-xs uppercase tracking-widest border-b border-white/10">
+                                  <tr>
+                                    <th className="p-3 font-medium w-12">#</th>
+                                    <th className="p-3 font-medium">Name</th>
+                                    <th className="p-3 font-medium">USN</th>
+                                    <th className="p-3 font-medium text-right">Points</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                  {col.map((member) => {
+                                    globalIdx++;
+                                    const rank = globalIdx;
+                                    return (
+                                      <tr key={member.usn} className="bg-white/5 hover:bg-white/10 transition-colors">
+                                        <td className="p-3 text-parchment-dim tabular-nums">{rank}</td>
+                                        <td className="p-3 text-white font-medium">{member.name}</td>
+                                        <td className="p-3 text-parchment-dim text-sm tracking-wider">{member.usn}</td>
+                                        <td className="p-3 text-right tabular-nums font-bold text-xl" style={{ color: member.score > 0 ? h.c2 : '#666' }}>+{member.score}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        )}
+
+        {state.projectorDisplay?.mode === "INDIVIDUAL_RACE" && state.individualRaceData && (
+          <div className="w-full max-w-6xl flex flex-col items-center animate-fade-in">
+            <h1 className="text-5xl md:text-7xl font-[family-name:var(--font-cinzel)] text-gold-bright drop-shadow-[0_0_20px_rgba(201,162,39,0.5)] mb-4 tracking-widest">
+              🏆 INDIVIDUAL RACE
+            </h1>
+            <p className="text-xl text-parchment-dim mb-12 tracking-widest">Cumulative scores through Question {state.currentQuestion}</p>
+            
+            {(() => {
+              const participants = state.individualRaceData || [];
+              const COL_SIZE = 20;
+              const columns: typeof participants[] = [];
+              for (let i = 0; i < participants.length; i += COL_SIZE) {
+                columns.push(participants.slice(i, i + COL_SIZE));
+              }
+              let globalIdx = 0;
+              return (
+                <div className="flex gap-6 w-full overflow-x-auto">
+                  {columns.map((col, colIdx) => (
+                    <div key={colIdx} className="flex-1 min-w-[350px] glass-panel-premium p-6">
+                      <table className="w-full text-left">
+                        <thead className="text-parchment-dim text-xs uppercase tracking-widest border-b border-white/10">
+                          <tr>
+                            <th className="p-2 font-medium w-12">#</th>
+                            <th className="p-2 font-medium">Name</th>
+                            <th className="p-2 font-medium">USN</th>
+                            <th className="p-2 font-medium text-center">House</th>
+                            <th className="p-2 font-medium text-right">Score</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {col.map((p) => {
+                            globalIdx++;
+                            const rank = globalIdx;
+                            const ph = HOUSES[(p.house || "gryffindor").toLowerCase() as HouseName] || HOUSES["gryffindor"];
+                            return (
+                              <tr key={p.usn} className={`transition-colors ${rank <= 3 ? 'bg-gold-bright/5' : 'bg-white/5 hover:bg-white/10'}`}>
+                                <td className={`p-2 tabular-nums font-[family-name:var(--font-cinzel)] ${rank <= 3 ? 'text-gold-bright font-bold text-lg' : 'text-parchment-dim'}`}>{rank}</td>
+                                <td className="p-2 text-white font-medium">{p.name}</td>
+                                <td className="p-2 text-parchment-dim text-xs tracking-wider">{p.usn}</td>
+                                <td className="p-2 text-center">
+                                  <span className="inline-block px-2 py-0.5 rounded text-xs font-bold tracking-wider uppercase border" style={{ borderColor: ph.c2, color: ph.c2, backgroundColor: `${ph.c2}15` }}>
+                                    {ph.name}
+                                  </span>
+                                </td>
+                                <td className="p-2 text-right tabular-nums font-bold text-lg" style={{ color: p.score > 0 ? '#e8c968' : '#666' }}>{p.score}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* === NORMAL DISPLAY (only when no race is active) === */}
+        {(!state.projectorDisplay || state.projectorDisplay.mode === "NORMAL") && (
+          <>
         {/* LOBBY STATE */}
         {(gameState === "WAITING" || gameState === "QUESTIONS_READY") && (
           <div className="w-full max-w-5xl flex flex-col items-center animate-fade-in text-center">
@@ -378,6 +561,8 @@ export default function ProjectorApp() {
               </div>
             )}
           </div>
+        )}
+          </>
         )}
 
       </main>

@@ -25,6 +25,15 @@ export async function POST() {
       );
     }
 
+    // Block advancing if a projector race display is active
+    const displayMode = round.projectorDisplay?.mode || "NORMAL";
+    if (displayMode !== "NORMAL") {
+      return NextResponse.json(
+        { error: "Hide the active projector display before starting the next question." },
+        { status: 400 }
+      );
+    }
+
     const nextQuestionNumber = round.currentQuestion + 1;
     const nextQuestion = await Question.findOne({ round: round.roundNumber, questionNumber: nextQuestionNumber });
 
