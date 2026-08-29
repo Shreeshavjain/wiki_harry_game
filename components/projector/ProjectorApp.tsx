@@ -265,78 +265,77 @@ export default function ProjectorApp() {
         )}
 
         {state.projectorDisplay?.mode === "INDIVIDUAL_RACE" && state.individualRaceData && (
-          <div className="w-full max-w-[80rem] flex flex-col items-center animate-fade-in h-[calc(100dvh-6rem)] min-h-0 pt-2 pb-6">
+          <div className="w-full max-w-[80rem] flex flex-col items-center animate-fade-in pt-8 pb-16 min-h-[100dvh]">
             
-            {/* Fixed Title and Subtitle */}
-            <div className="shrink-0 flex flex-col items-center text-center mb-6">
+            {/* Title and Subtitle */}
+            <div className="flex flex-col items-center text-center mb-10 w-full">
               <h1 className="text-7xl md:text-[6.5rem] font-[family-name:var(--font-cinzel)] text-gold-bright drop-shadow-[0_4px_25px_rgba(201,162,39,0.35)] mb-4 tracking-[0.2em] uppercase leading-tight">
                 🏆 INDIVIDUAL RACE
               </h1>
-              <p className="text-2xl md:text-3xl text-parchment-dim tracking-[0.3em] font-medium uppercase opacity-90">
+              <p className="text-2xl md:text-3xl text-parchment-dim tracking-[0.3em] font-medium uppercase opacity-90 mb-3">
                 Cumulative Scores • Through Question {state.currentQuestion}
               </p>
             </div>
             
-            {/* Scrollable Leaderboard Container */}
-            <div className="w-full flex-1 min-h-0 glass-panel-premium overflow-hidden flex flex-col shadow-2xl relative rounded-xl border border-white/10 bg-[#030408]/80 backdrop-blur-sm">
-              
-              <div className="w-full flex-1 overflow-y-auto overflow-x-hidden projector-scrollbar relative">
-                <table className="w-full text-left border-collapse table-fixed">
-                  <thead className="text-parchment-dim text-sm uppercase tracking-[0.2em] sticky top-0 z-20 shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
-                    <tr className="bg-[#05070d] border-b border-white/20">
-                      <th className="p-4 md:p-6 font-medium w-[100px] text-center">RANK</th>
-                      <th className="p-4 md:p-6 font-medium min-w-[240px]">NAME</th>
-                      <th className="p-4 md:p-6 font-medium w-[160px]">USN</th>
-                      <th className="p-4 md:p-6 font-medium w-[200px]">HOUSE</th>
-                      <th className="p-4 md:p-6 font-medium w-[120px] text-right">SCORE</th>
-                    </tr>
-                  </thead>
-                  
-                  <tbody className="divide-y divide-white/5">
-                    {(state.individualRaceData || []).map((p, idx) => {
-                      const rank = idx + 1;
-                      const ph = HOUSES[(p.house || "gryffindor").toLowerCase() as HouseName] || HOUSES["gryffindor"];
-                      return (
-                        <tr key={p.usn} className={`transition-colors hover:bg-white/10 ${rank <= 3 ? 'bg-gold-bright/5' : ''}`}>
-                          <td className="p-4 md:p-6 text-center tabular-nums text-4xl">
-                            {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : <span className="text-3xl text-parchment-dim font-[family-name:var(--font-cinzel)] font-bold">{rank}</span>}
-                          </td>
-                          
-                          <td className="p-4 md:p-6">
-                            <div className="flex flex-col justify-center max-w-[400px]">
-                              {rank === 1 && (
-                                <div className="mb-1">
-                                  <span className="inline-flex items-center text-[0.65rem] font-bold px-2 py-0.5 rounded uppercase tracking-widest border shadow-sm"
-                                        style={{ color: '#ffca28', borderColor: 'rgba(255,202,40,0.5)', backgroundColor: 'rgba(255,202,40,0.15)' }}>
-                                    <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse mr-1.5" style={{ backgroundColor: '#ffca28' }}></span>
-                                    Current Leader
-                                  </span>
-                                </div>
-                              )}
-                              <div className="text-white font-medium text-2xl md:text-3xl truncate">
-                                {p.name}
+            {/* Leaderboard Container */}
+            <div className="w-full glass-panel-premium shadow-2xl relative rounded-xl border border-white/10 bg-[#030408]/80 backdrop-blur-sm">
+              <table className="w-full text-left border-collapse table-fixed">
+                <thead className="text-parchment-dim text-sm uppercase tracking-[0.2em] bg-[#05070d] shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+                  <tr className="border-b border-white/20">
+                    <th className="p-4 md:p-6 font-medium w-[100px] text-center">RANK</th>
+                    <th className="p-4 md:p-6 font-medium">NAME</th>
+                    <th className="p-4 md:p-6 font-medium w-[200px]">USN</th>
+                    <th className="p-4 md:p-6 font-medium w-[220px]">HOUSE</th>
+                    <th className="p-4 md:p-6 font-medium w-[140px] text-right">SCORE</th>
+                  </tr>
+                </thead>
+                
+                <tbody className="divide-y divide-white/5 bg-transparent">
+                  {(state.individualRaceData || []).map((p, idx) => {
+                    const globalRank = idx + 1;
+                    const ph = HOUSES[(p.house || "gryffindor").toLowerCase() as HouseName] || HOUSES["gryffindor"];
+                    return (
+                      <tr key={p.usn} className={`transition-colors hover:bg-white/10 ${globalRank <= 3 ? 'bg-gold-bright/5' : ''}`}>
+                        <td className="p-4 md:p-6 text-center tabular-nums text-4xl align-middle">
+                          {globalRank === 1 ? "🥇" : globalRank === 2 ? "🥈" : globalRank === 3 ? "🥉" : <span className="text-3xl text-parchment-dim font-[family-name:var(--font-cinzel)] font-bold">{globalRank}</span>}
+                        </td>
+                        
+                        <td className="p-4 md:p-6 align-middle">
+                          <div className="flex flex-col justify-center max-w-full overflow-hidden">
+                            {globalRank === 1 && (
+                              <div className="mb-1">
+                                <span className="inline-flex items-center text-[0.65rem] font-bold px-2 py-0.5 rounded uppercase tracking-widest border shadow-sm"
+                                      style={{ color: '#ffca28', borderColor: 'rgba(255,202,40,0.5)', backgroundColor: 'rgba(255,202,40,0.15)' }}>
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse mr-1.5" style={{ backgroundColor: '#ffca28' }}></span>
+                                  Current Leader
+                                </span>
                               </div>
+                            )}
+                            <div className="text-white font-medium text-2xl md:text-3xl truncate">
+                              {p.name}
                             </div>
-                          </td>
-                          
-                          <td className="p-4 md:p-6 text-parchment-dim text-xl tracking-wider font-mono">{p.usn}</td>
-                          
-                          <td className="p-4 md:p-6">
-                            <span className="inline-block px-3 py-1.5 rounded-sm text-xs md:text-sm font-bold tracking-widest uppercase border shadow-md" 
-                                  style={{ borderColor: `${ph.accent}80`, color: ph.text, backgroundColor: ph.surface, textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
-                              {ph.name}
-                            </span>
-                          </td>
-                          
-                          <td className="p-4 md:p-6 text-right tabular-nums font-bold text-4xl md:text-5xl pr-6 md:pr-10" style={{ color: p.score > 0 ? '#ffffff' : '#666' }}>
-                            {p.score}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          </div>
+                        </td>
+                        
+                        <td className="p-4 md:p-6 text-parchment-dim text-xl tracking-wider font-mono truncate align-middle">
+                          {p.usn}
+                        </td>
+                        
+                        <td className="p-4 md:p-6 align-middle">
+                          <span className="inline-block px-4 py-2 rounded-lg text-sm font-bold tracking-widest uppercase border shadow-md" 
+                                style={{ borderColor: `${ph.accent}80`, color: ph.text, backgroundColor: ph.surface, textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                            {ph.name}
+                          </span>
+                        </td>
+                        
+                        <td className="p-4 md:p-6 text-right tabular-nums font-bold text-4xl md:text-5xl pr-6 md:pr-10 align-middle" style={{ color: p.score > 0 ? '#ffffff' : '#888888', textShadow: p.score === 0 ? '0 1px 2px rgba(255,255,255,0.1)' : 'none' }}>
+                          {p.score}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
