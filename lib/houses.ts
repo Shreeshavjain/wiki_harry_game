@@ -3,9 +3,12 @@ import type { HouseName } from "./models/participant";
 export interface HouseDefinition {
   name: string;
   tag: string;
-  c1: string;
-  c2: string;
+  c1: string; // Legacy surface
+  c2: string; // Legacy accent
+  surface: string;
   accent: string;
+  text: string;
+  highlight: string;
   crest: string;
   flavor: string;
 }
@@ -18,9 +21,12 @@ export const HOUSES: Record<HouseName, HouseDefinition> = {
   gryffindor: {
     name: "Gryffindor",
     tag: "Where dwell the brave at heart",
-    c1: "#740001",
-    c2: "#ae0001",
-    accent: "#d3a625",
+    c1: "#2B0F10", 
+    c2: "#E53935", 
+    surface: "#2B0F10", // deep crimson surface
+    accent: "#E53935", // bright red accent
+    text: "#FFD54F", // warm ivory/gold text
+    highlight: "#FFCA28", // gold highlight
     crest: `<circle cx="60" cy="60" r="56" fill="none" stroke="#d3a625" stroke-width="3"/>
       <path d="M60 30 C50 30 42 38 42 50 C42 62 52 68 52 78 L45 78 C45 85 52 90 60 90 C68 90 75 85 75 78 L68 78 C68 68 78 62 78 50 C78 38 70 30 60 30 Z" fill="#d3a625"/>
       <path d="M60 40 C55 40 51 44 51 50 C51 58 60 62 60 62 C60 62 69 58 69 50 C69 44 65 40 60 40 Z" fill="#740001"/>`,
@@ -29,9 +35,12 @@ export const HOUSES: Record<HouseName, HouseDefinition> = {
   slytherin: {
     name: "Slytherin",
     tag: "Those of cunning and ambition",
-    c1: "#0d2818",
-    c2: "#1a472a",
-    accent: "#aaaaaa",
+    c1: "#0A1F13", 
+    c2: "#2E7D32", 
+    surface: "#0A1F13", // deep forest surface
+    accent: "#2E7D32", // emerald accent
+    text: "#E8F5E9", // bright emerald/ivory text
+    highlight: "#A5D6A7", // soft green highlight
     crest: `<circle cx="60" cy="60" r="56" fill="none" stroke="#aaaaaa" stroke-width="3"/>
       <path d="M35 40 C45 55 45 65 35 82 C55 78 62 68 60 55 C68 68 70 80 60 90 C80 82 82 62 68 50 C78 48 84 40 82 32 C72 42 60 40 55 32 C52 42 40 40 35 40 Z" fill="#aaaaaa"/>`,
     flavor: "The Hat senses ambition...",
@@ -39,9 +48,12 @@ export const HOUSES: Record<HouseName, HouseDefinition> = {
   ravenclaw: {
     name: "Ravenclaw",
     tag: "Where those of wit and learning belong",
-    c1: "#0c1533",
-    c2: "#222f5b",
-    accent: "#946b2d",
+    c1: "#091024", 
+    c2: "#1976D2", 
+    surface: "#091024", // deep navy surface
+    accent: "#1976D2", // strong royal blue / blue-cyan accent
+    text: "#E3F2FD", // bright blue-white/silver text
+    highlight: "#64B5F6", // light blue highlight
     crest: `<circle cx="60" cy="60" r="56" fill="none" stroke="#946b2d" stroke-width="3"/>
       <path d="M60 34 L74 58 L96 60 L78 74 L84 96 L60 84 L36 96 L42 74 L24 60 L46 58 Z" fill="#946b2d"/>`,
     flavor: "The Hat senses wisdom...",
@@ -49,9 +61,12 @@ export const HOUSES: Record<HouseName, HouseDefinition> = {
   hufflepuff: {
     name: "Hufflepuff",
     tag: "Where they are just and loyal",
-    c1: "#5c4a10",
-    c2: "#ecb939",
-    accent: "#372e29",
+    c1: "#211A0F", 
+    c2: "#FBC02D", 
+    surface: "#211A0F", // deep warm-black/brown surface
+    accent: "#FBC02D", // rich gold accent
+    text: "#FFF59D", // bright ivory/gold text
+    highlight: "#FFF9C4", // pale gold highlight
     crest: `<circle cx="60" cy="60" r="56" fill="none" stroke="#ecb939" stroke-width="3"/>
       <ellipse cx="60" cy="60" rx="26" ry="20" fill="#ecb939"/>
       <path d="M40 60 C40 50 48 44 60 44 C72 44 80 50 80 60" fill="none" stroke="#372e29" stroke-width="3"/>
@@ -86,10 +101,14 @@ export const SORTING_HAT_SVG = `
 
 /** Theme color tokens */
 export const THEME = {
-  night1: "#080a14",
-  night2: "#10152b",
-  parchment: "#efe4c9",
-  parchmentDim: "#cdbd93",
+  night1: "#05070D",
+  night2: "#080B14",
+  surface: "#0C1020",
+  parchment: "#ffffff",
+  parchmentDim: "#a0a5b5",
   gold: "#c9a227",
   goldBright: "#e8c968",
+  goldMuted: "#8a7329",
+  emerald: "#10b981",
+  crimson: "#ef4444",
 } as const;

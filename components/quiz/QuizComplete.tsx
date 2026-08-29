@@ -14,12 +14,12 @@ export default function QuizComplete({ score, house }: QuizCompleteProps) {
   const h = HOUSES[house];
 
   return (
-    <div className="glass-panel-premium max-w-lg w-full p-10 text-center animate-fade-in flex flex-col items-center relative overflow-hidden">
+    <div className="glass-surface max-w-lg w-full p-10 text-center animate-fade-in flex flex-col items-center relative overflow-hidden">
       {/* Decorative corner accents */}
       <div className="absolute top-0 left-0 w-12 h-12 border-t border-l border-white/20 opacity-50 rounded-tl-xl" />
       <div className="absolute bottom-0 right-0 w-12 h-12 border-b border-r border-white/20 opacity-50 rounded-br-xl" />
 
-      <h2 className="font-[family-name:var(--font-cinzel)] text-3xl sm:text-4xl tracking-[0.2em] text-gold-bright m-0 mb-8 drop-shadow-[0_0_15px_rgba(201,162,39,0.4)]">
+      <h2 className="display-text text-3xl sm:text-4xl tracking-[0.2em] text-gold-bright m-0 mb-8 drop-shadow-[0_0_15px_rgba(201,162,39,0.4)]">
         QUIZ COMPLETE
       </h2>
 
@@ -29,17 +29,17 @@ export default function QuizComplete({ score, house }: QuizCompleteProps) {
       </div>
 
       <div className="mb-10 w-full">
-        <p className="text-parchment-dim uppercase tracking-[0.3em] text-[0.65rem] m-0 mb-2">
+        <p className="text-parchment-dim uppercase tracking-[0.3em] text-[0.65rem] m-0 mb-2 body-text">
           Final Score
         </p>
-        <p className="text-6xl sm:text-7xl font-light tabular-nums m-0 drop-shadow-md" style={{ color: h.accent }}>
-          {score} <span className="text-2xl text-parchment-dim ml-1 opacity-80 tracking-widest uppercase">PTS</span>
+        <p className="text-6xl sm:text-7xl font-light data-text m-0 drop-shadow-md" style={{ color: h.accent }}>
+          {score} <span className="text-2xl text-parchment-dim ml-1 opacity-80 tracking-widest uppercase body-text">PTS</span>
         </p>
       </div>
 
-      <div className="mb-10 p-5 rounded-xl bg-black/40 border border-white/5 w-full shadow-inner relative overflow-hidden">
+      <div className="mb-10 p-5 rounded-xl bg-[rgba(8,11,20,0.5)] border border-white/5 w-full shadow-inner relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ background: `linear-gradient(135deg, transparent, ${h.accent}, transparent)` }} />
-        <p className="text-sm sm:text-base text-parchment-dim m-0 leading-relaxed relative z-10">
+        <p className="text-sm sm:text-base text-parchment-dim body-text m-0 leading-relaxed relative z-10">
           Your points have been contributed to{" "}
           <strong className="tracking-wider uppercase" style={{ color: h.accent, textShadow: `0 0 10px ${h.accent}` }}>{h.name}</strong>.
           <br/>

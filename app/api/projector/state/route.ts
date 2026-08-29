@@ -148,7 +148,7 @@ export async function GET() {
         const members = await Participant.find({
           round: round.roundNumber,
           house: projectorDisplay.selectedHouse,
-        }).sort({ "quizState.score": -1 }).lean();
+        }).sort({ "quizState.score": -1, _id: 1 }).lean();
 
         houseDetailsData = members.map((m: any) => ({
           name: m.name,
@@ -160,10 +160,10 @@ export async function GET() {
     }
 
     if (projectorDisplay.mode === "INDIVIDUAL_RACE") {
-      // All participants sorted by cumulative score descending
+      // All participants sorted by cumulative score descending, deterministic tie-breaking
       const participants = await Participant.find({
         round: round.roundNumber,
-      }).sort({ "quizState.score": -1 }).lean();
+      }).sort({ "quizState.score": -1, _id: 1 }).lean();
 
       individualRaceData = participants.map((p: any) => ({
         name: p.name,

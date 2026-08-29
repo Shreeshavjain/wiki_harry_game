@@ -96,7 +96,7 @@ export default function QuizApp() {
   if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <div className="text-parchment animate-pulse font-[family-name:var(--font-cinzel)] tracking-widest">
+        <div className="text-parchment animate-pulse heading-text tracking-widest">
           Loading Magic...
         </div>
       </div>
@@ -115,7 +115,7 @@ export default function QuizApp() {
   }
 
   return (
-    <div className="relative min-h-dvh w-full overflow-hidden bg-[#03050a] flex justify-center">
+    <div className="relative min-h-dvh w-full overflow-hidden bg-[var(--color-night-1)] flex justify-center">
       {/* Background Magic */}
       <StarField />
       
@@ -148,15 +148,15 @@ export default function QuizApp() {
             onStateRefresh={fetchState}
           />
         ) : (quizState?.gameState === "LIVE" || quizState?.gameState === "PAUSED" || quizState?.gameState === "TIME_UP" || quizState?.gameState === "REVEAL") && !quizState.questionData ? (
-          <div className="glass-panel p-8 text-center animate-fade-in">
-            <p className="text-parchment-dim m-0">Syncing game state...</p>
+          <div className="glass-surface p-8 text-center animate-fade-in">
+            <p className="text-parchment-dim m-0 body-text">Syncing game state...</p>
           </div>
         ) : null}
         {quizState?.gameState === "RESTARTED" && (
-          <div className="flex flex-col items-center justify-center text-center px-4 min-h-dvh">
-            <h2 className="text-3xl font-[family-name:var(--font-cinzel)] text-[#ff8f8f] mb-4 m-0">GAME RESTARTED</h2>
-            <p className="text-parchment-dim m-0 mb-2">The host has restarted the quiz.</p>
-            <p className="text-parchment-dim m-0">Please wait for the host to start again.</p>
+          <div className="flex flex-col items-center justify-center text-center px-4 min-h-dvh animate-fade-in">
+            <h2 className="text-3xl heading-text text-crimson mb-4 m-0">GAME RESTARTED</h2>
+            <p className="text-parchment-dim body-text m-0 mb-2">The host has restarted the quiz.</p>
+            <p className="text-parchment-dim body-text m-0">Please wait for the host to start again.</p>
           </div>
         )}
         {quizState?.gameState === "COMPLETED" && (

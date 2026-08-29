@@ -507,16 +507,31 @@ export default function AdminDashboard() {
                       return (
                         <button
                           key={house}
-                          className={`small-btn font-bold tracking-wider transition-all ${
+                          className={`small-btn font-bold tracking-widest uppercase transition-all duration-300 ${
                             isSelected
-                              ? 'ring-2 ring-offset-1 ring-offset-black scale-105'
-                              : 'opacity-80 hover:opacity-100'
+                              ? 'scale-105 border-2 shadow-lg shadow-black/50'
+                              : 'hover:scale-[1.02]'
                           }`}
                           style={{
-                            backgroundColor: `${h.c2}30`,
-                            borderColor: h.c2,
-                            color: h.c2,
-                            ...(isSelected ? { ringColor: h.c2 } : {}),
+                            backgroundColor: isSelected ? `${h.accent}30` : h.surface,
+                            borderColor: isSelected ? h.accent : `${h.accent}40`,
+                            color: isSelected ? '#ffffff' : h.text,
+                            textShadow: isSelected ? '0 2px 4px rgba(0,0,0,0.8)' : 'none',
+                            ...(isSelected ? { boxShadow: `0 0 15px ${h.accent}50` } : {})
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = `${h.surface}E0`;
+                              e.currentTarget.style.borderColor = h.accent;
+                              e.currentTarget.style.boxShadow = `0 0 10px ${h.accent}30`;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = h.surface;
+                              e.currentTarget.style.borderColor = `${h.accent}40`;
+                              e.currentTarget.style.boxShadow = 'none';
+                            }
                           }}
                           onClick={() => {
                             if (isSelected) {
