@@ -123,10 +123,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      isCorrect,
-      pointsAwarded,
-      correctRank,
       selectedOption,
+      // Temporarily hiding correctness to match game flow (wait for admin reveal)
     });
   } catch (error) {
     console.error("Answer submission error:", error);

@@ -21,42 +21,20 @@ export async function GET(request: Request) {
     // Handle lazy transition if LIVE and time expired
     if (round.gameState === "LIVE" && round.questionEndsAt) {
       if (new Date() > round.questionEndsAt) {
-        // Time expired! Try to transition atomically.
-        const nextQ = round.currentQuestion + 1;
-        const totalQ = await Question.countDocuments({ round: round.roundNumber });
-        
-        let newState = "LIVE";
-        if (nextQ > totalQ) {
-           newState = "COMPLETED";
-        }
-        
-        const now = new Date();
-        const endsAt = new Date(now.getTime() + 60000); // 60 seconds for next question
-
+        // Time expired! Transition to TIME_UP atomically.
         const updatedRound = await Round.findOneAndUpdate(
           { _id: round._id, currentQuestion: round.currentQuestion, gameState: "LIVE" },
-          { 
-            currentQuestion: nextQ,
-            questionStartedAt: newState === "LIVE" ? now : null,
-            questionEndsAt: newState === "LIVE" ? endsAt : null,
-            gameState: newState
-          },
+          { gameState: "TIME_UP" },
           { new: true }
         );
         if (updatedRound) {
            // Successfully transitioned it
-           round.currentQuestion = updatedRound.currentQuestion;
            round.gameState = updatedRound.gameState;
-           round.questionStartedAt = updatedRound.questionStartedAt;
-           round.questionEndsAt = updatedRound.questionEndsAt;
         } else {
            // Someone else transitioned it, fetch fresh
            const freshRound = await Round.findOne({ _id: round._id });
            if (freshRound) {
-             round.currentQuestion = freshRound.currentQuestion;
              round.gameState = freshRound.gameState;
-             round.questionStartedAt = freshRound.questionStartedAt;
-             round.questionEndsAt = freshRound.questionEndsAt;
            }
         }
       }
@@ -68,7 +46,7 @@ export async function GET(request: Request) {
 
     console.log(`[QUIZ STATE] Round ${round.roundNumber} | State: ${round.gameState} | currentQ: ${round.currentQuestion}`);
 
-    if (round.gameState === "LIVE" && round.currentQuestion > 0) {
+    if ((round.gameState === "LIVE" || round.gameState === "TIME_UP" || round.gameState === "REVEAL") && round.currentQuestion > 0) {
       const q = await Question.findOne({ round: round.roundNumber, questionNumber: round.currentQuestion });
       if (q) {
         questionData = {
@@ -78,6 +56,7 @@ export async function GET(request: Request) {
           option_b: q.option_b,
           option_c: q.option_c,
           option_d: q.option_d,
+          ...(round.gameState === "REVEAL" && { correct_option: q.correct_option }),
         };
         hasAnswered = participant.quizState?.answeredQuestions?.includes(q.questionNumber) ?? false;
       } else {

@@ -24,6 +24,7 @@ export interface QuizState {
     option_b: string;
     option_c: string;
     option_d: string;
+    correct_option?: string;
   } | null;
   frozenRemainingMs?: number;
   quizAttempt?: number;
@@ -140,13 +141,13 @@ export default function QuizApp() {
       <main className="relative z-10 w-full max-w-5xl min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
         {quizState?.gameState === "WAITING" && <WaitingScreen state="WAITING" />}
         {quizState?.gameState === "QUESTIONS_READY" && <WaitingScreen state="QUESTIONS_READY" />}
-        {(quizState?.gameState === "LIVE" || quizState?.gameState === "PAUSED") && quizState.questionData && usn ? (
+        {(quizState?.gameState === "LIVE" || quizState?.gameState === "PAUSED" || quizState?.gameState === "TIME_UP" || quizState?.gameState === "REVEAL") && quizState.questionData && usn ? (
           <LiveQuestion 
             quizState={quizState} 
             usn={usn} 
             onStateRefresh={fetchState}
           />
-        ) : (quizState?.gameState === "LIVE" || quizState?.gameState === "PAUSED") && !quizState.questionData ? (
+        ) : (quizState?.gameState === "LIVE" || quizState?.gameState === "PAUSED" || quizState?.gameState === "TIME_UP" || quizState?.gameState === "REVEAL") && !quizState.questionData ? (
           <div className="glass-panel p-8 text-center animate-fade-in">
             <p className="text-parchment-dim m-0">Syncing game state...</p>
           </div>

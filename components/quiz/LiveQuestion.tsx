@@ -107,7 +107,7 @@ export default function LiveQuestion({ quizState, usn, onStateRefresh }: LiveQue
     );
   }
 
-  const isLocked = hasAnswered || submittedResult !== null || timeLeft === 0 || quizState.gameState === "PAUSED";
+  const isLocked = hasAnswered || submittedResult !== null || timeLeft === 0 || quizState.gameState === "PAUSED" || quizState.gameState === "TIME_UP" || quizState.gameState === "REVEAL";
 
   return (
     <div className="w-full max-w-4xl flex flex-col items-center animate-fade-in-up pb-12 relative pt-8">
@@ -137,13 +137,7 @@ export default function LiveQuestion({ quizState, usn, onStateRefresh }: LiveQue
           </div>
         </div>
 
-        <div className="flex flex-col items-end z-10">
-          <span className="text-[0.65rem] tracking-[0.3em] uppercase text-parchment-dim mb-1">Score</span>
-          <div className="text-xl sm:text-2xl font-bold text-white tracking-wider flex items-center gap-1 drop-shadow-md">
-             {quizState.score} <span className="text-xs sm:text-sm font-normal text-gold-bright opacity-80">PTS</span>
-          </div>
-        </div>
-        
+
         {/* Magical Timer Progress Bar */}
         <div className="absolute bottom-0 left-0 w-full h-[1px] bg-white/5 overflow-hidden">
            <div 
@@ -177,15 +171,7 @@ export default function LiveQuestion({ quizState, usn, onStateRefresh }: LiveQue
           }
 
           if (isLocked) {
-             if (isSelected && submittedResult) {
-                if (submittedResult.isCorrect) {
-                   stateClass = "border-emerald-500 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.3)] ring-1 ring-emerald-500/50";
-                } else {
-                   stateClass = "border-rose-500 bg-rose-500/10 shadow-[0_0_30px_rgba(244,63,94,0.3)] animate-shake";
-                }
-             } else {
-                stateClass = isSelected ? "border-white/30 bg-white/10 cursor-not-allowed opacity-80" : "border-white/5 bg-black/40 opacity-40 cursor-not-allowed";
-             }
+             stateClass = isSelected ? "border-[var(--house-accent)] bg-white/10 cursor-not-allowed opacity-80 shadow-[0_0_15px_color-mix(in_srgb,var(--house-accent)_20%,transparent)]" : "border-white/5 bg-black/40 opacity-40 cursor-not-allowed";
           }
 
           return (
@@ -200,10 +186,10 @@ export default function LiveQuestion({ quizState, usn, onStateRefresh }: LiveQue
               )}
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold font-[family-name:var(--font-cinzel)] shrink-0 transition-colors text-lg ${
                 isSelected 
-                  ? (submittedResult?.isCorrect ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : submittedResult && !submittedResult.isCorrect ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-white/10 text-white border border-white/20') 
+                  ? 'bg-white/10 text-white border border-white/20' 
                   : 'bg-black/40 text-parchment-dim border border-white/10 group-hover:text-white'
               }`}>
-                {isSelected && submittedResult?.isCorrect ? "✓" : isSelected && submittedResult && !submittedResult.isCorrect ? "✕" : opt}
+                {opt}
               </div>
               <div className={`text-base sm:text-lg leading-snug transition-colors ${isSelected || isLocked ? 'text-white' : 'text-parchment-dim group-hover:text-white'}`}>
                 {text as string}
@@ -213,43 +199,35 @@ export default function LiveQuestion({ quizState, usn, onStateRefresh }: LiveQue
         })}
       </div>
 
-      {/* Result Display or Submit Button */}
       <div className="min-h-[140px] flex items-center justify-center w-full">
-        {submittedResult ? (
-          <div className="text-center w-full max-w-[500px]">
-            {submittedResult.isCorrect ? (
-              <div className={`glass-panel-premium p-8 flex flex-col items-center border-emerald-500/30 bg-emerald-500/10 ${submittedResult.correctRank === 1 ? 'animate-burst shadow-[0_0_60px_rgba(16,185,129,0.3)] ring-1 ring-emerald-500/50' : 'animate-scale-in'}`}>
-                <div className="text-emerald-400 text-xl sm:text-2xl font-[family-name:var(--font-cinzel)] font-bold mb-2 m-0 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">
-                  {submittedResult.correctRank === 1 ? "✦ YOU ANSWERED FIRST! ✦" : 
-                   submittedResult.correctRank === 2 ? "YOU ANSWERED 2ND!" :
-                   submittedResult.correctRank === 3 ? "YOU ANSWERED 3RD!" :
-                   submittedResult.correctRank === 4 ? "YOU ANSWERED 4TH!" :
-                   submittedResult.correctRank === 5 ? "YOU ANSWERED 5TH!" :
-                   "CORRECT ANSWER"}
-                </div>
-                {submittedResult.correctRank === 1 && (
-                  <div className="text-emerald-400/80 text-[0.65rem] uppercase tracking-[0.3em] mb-4">
-                    Fastest in the tournament
-                  </div>
-                )}
-                <div className="text-5xl sm:text-6xl font-light tabular-nums text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.6)] animate-fade-in-up mt-2">
-                  +{submittedResult.pointsAwarded} <span className="text-xl opacity-80 tracking-widest uppercase">PTS</span>
-                </div>
-              </div>
-            ) : (
-              <div className="glass-panel-premium p-8 flex flex-col items-center border-rose-500/30 bg-rose-500/10 animate-scale-in">
-                <div className="text-rose-400 text-xl sm:text-2xl font-[family-name:var(--font-cinzel)] font-bold mb-4 m-0 tracking-widest drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]">
-                  INCORRECT
-                </div>
-                <div className="text-5xl sm:text-6xl font-light tabular-nums text-rose-400/80 drop-shadow-sm">
-                  +0 <span className="text-xl opacity-80 tracking-widest uppercase">PTS</span>
-                </div>
-              </div>
-            )}
+        {quizState.gameState === "REVEAL" ? (
+          <div className="glass-panel-premium px-8 py-6 text-center border-emerald-500/30 bg-emerald-500/10 animate-scale-in">
+            <div className="text-emerald-400 text-xl sm:text-2xl font-[family-name:var(--font-cinzel)] font-bold mb-2 tracking-widest drop-shadow-md">
+              ANSWER REVEALED
+            </div>
+            <div className="text-white text-lg tracking-wide">
+              Correct answer:<br />
+              <span className="font-bold text-emerald-400 text-2xl">{questionData.correct_option}</span> — {questionData[`option_${questionData.correct_option?.toLowerCase() as "a"|"b"|"c"|"d"}`]}
+            </div>
           </div>
-        ) : hasAnswered ? (
-          <div className="glass-panel-premium px-8 py-4 text-center text-parchment-dim tracking-[0.2em] uppercase text-sm border-white/5 opacity-80">
-            Answer Locked
+        ) : quizState.gameState === "TIME_UP" ? (
+          <div className="glass-panel-premium px-8 py-6 text-center border-orange-500/30 bg-orange-500/10 animate-scale-in">
+            <div className="text-orange-400 text-xl sm:text-2xl font-[family-name:var(--font-cinzel)] font-bold mb-2 tracking-widest drop-shadow-md">
+              TIME'S UP!
+            </div>
+            <div className="text-parchment-dim text-sm tracking-wide">
+              Waiting for the admin to reveal the answer...
+            </div>
+          </div>
+        ) : hasAnswered || submittedResult ? (
+          <div className="glass-panel-premium px-8 py-6 text-center border-white/10 bg-white/5 animate-scale-in">
+            <div className="text-white text-xl font-[family-name:var(--font-cinzel)] font-bold mb-3 tracking-widest drop-shadow-sm flex items-center justify-center gap-2">
+              <span>🔒</span> ANSWER LOCKED
+            </div>
+            <div className="text-parchment-dim text-sm tracking-wide leading-relaxed">
+              Your answer has been recorded.<br />
+              <span className="opacity-70 mt-1 inline-block">Waiting for the admin to reveal the answer...</span>
+            </div>
           </div>
         ) : timeLeft === 0 ? (
           <div className="glass-panel-premium px-8 py-4 text-center text-rose-400 tracking-[0.2em] uppercase text-sm border-rose-500/20 bg-rose-500/5">

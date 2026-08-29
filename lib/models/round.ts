@@ -1,7 +1,7 @@
 import mongoose, { Schema, type InferSchemaType } from "mongoose";
 
 const ROUND_STATUSES = ["active", "completed"] as const;
-const GAME_STATES = ["WAITING", "QUESTIONS_READY", "LIVE", "PAUSED", "RESTARTED", "COMPLETED"] as const;
+const GAME_STATES = ["WAITING", "QUESTIONS_READY", "LIVE", "PAUSED", "TIME_UP", "REVEAL", "RESTARTED", "COMPLETED"] as const;
 
 const countsSchema = new Schema(
   {
