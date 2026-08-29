@@ -22,6 +22,9 @@ export interface ProjectorState {
   } | null;
   counts?: Record<HouseName, number>;
   totalParticipants?: number;
+  histogram?: Record<string, number>;
+  fastestAnswers?: { rank: number; name: string; usn: string; house: HouseName; timeMs: number; points: number }[];
+  questionHousePoints?: Record<string, number>;
 }
 
 export default function ProjectorApp() {
@@ -225,6 +228,155 @@ export default function ProjectorApp() {
               })}
             </div>
 
+            {/* POST-REVEAL RESULTS */}
+            {gameState === "REVEAL" && (
+              <div className="w-full flex flex-col gap-16 mt-20 animate-fade-in-up border-t border-white/10 pt-16">
+                
+                {/* 1. ANSWER DISTRIBUTION HISTOGRAM (VERTICAL) */}
+                {state.histogram && (
+                  <div className="w-full bg-black/40 border border-white/5 rounded-2xl p-10 animate-fade-in-up">
+                    <h3 className="text-3xl font-[family-name:var(--font-cinzel)] text-gold-bright mb-2 text-center drop-shadow-md tracking-widest">
+                      ANSWER DISTRIBUTION
+                    </h3>
+                    
+                    <div className="text-center mb-10">
+                      <span className="inline-block px-6 py-2 rounded-full border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 font-bold tracking-widest text-xl">
+                        CORRECT ANSWER: {state.questionData.correct_option}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-center items-end gap-8 sm:gap-16 w-full max-w-4xl mx-auto h-64 mt-8">
+                      {(["A", "B", "C", "D"] as const).map(opt => {
+                        const count = state.histogram![opt] || 0;
+                        const total = Object.values(state.histogram!).reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? (count / total) * 100 : 0;
+                        const isCorrect = state.questionData!.correct_option === opt;
+                        
+                        return (
+                          <div key={opt} className="flex flex-col items-center justify-end h-full w-24">
+                            <div className="text-white font-bold text-2xl drop-shadow-md mb-2">
+                              {count}
+                            </div>
+                            <div className="w-full h-full bg-black/60 rounded-t-lg overflow-hidden flex flex-col justify-end border-b-0 border border-white/5 relative">
+                              <div 
+                                className={`w-full transition-all duration-1000 ease-out ${
+                                  isCorrect ? 'bg-emerald-500/80' : 'bg-rose-500/60'
+                                }`}
+                                style={{ height: `${percentage}%` }}
+                              />
+                            </div>
+                            <div className={`w-full py-3 mt-4 flex items-center justify-center font-bold text-3xl rounded-lg font-[family-name:var(--font-cinzel)] ${
+                              isCorrect ? 'bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-white/10 text-parchment-dim'
+                            }`}>
+                              {opt}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. TOP 5 FASTEST CORRECT */}
+                {state.fastestAnswers && state.fastestAnswers.length > 0 && (
+                  <div 
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-10 animate-fade-in-up"
+                    style={{ animationDelay: '1.5s', animationFillMode: 'both' }}
+                  >
+                    <h3 className="text-3xl font-[family-name:var(--font-cinzel)] text-emerald-400 mb-8 text-center drop-shadow-md tracking-widest">
+                      ⚡ TOP {Math.min(5, state.fastestAnswers.length)} FASTEST CORRECT
+                    </h3>
+                    <div className="w-full max-w-5xl mx-auto overflow-hidden rounded-xl border border-white/10">
+                      <table className="w-full text-left text-lg">
+                        <thead className="bg-black/60 text-parchment-dim text-sm uppercase tracking-widest border-b border-white/10">
+                          <tr>
+                            <th className="p-6 font-medium w-20 text-center">Rank</th>
+                            <th className="p-6 font-medium">Participant</th>
+                            <th className="p-6 font-medium text-center">House</th>
+                            <th className="p-6 font-medium text-right">Time</th>
+                            <th className="p-6 font-medium text-right">Points</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {state.fastestAnswers.map((ans) => {
+                            const safeHouse = (ans.house || "gryffindor").toLowerCase() as HouseName;
+                            const h = HOUSES[safeHouse] || HOUSES["gryffindor"];
+                            return (
+                              <tr key={ans.usn} className="bg-white/5 hover:bg-white/10 transition-colors">
+                                <td className="p-6 text-center font-[family-name:var(--font-cinzel)] text-2xl text-gold-bright">
+                                  #{ans.rank}
+                                </td>
+                                <td className="p-6">
+                                  <div className="font-bold text-white text-xl">{ans.name || "Unknown"}</div>
+                                  <div className="text-sm text-parchment-dim opacity-70 tracking-widest">{ans.usn || "N/A"}</div>
+                                </td>
+                                <td className="p-6 text-center">
+                                  <span className="inline-block px-4 py-2 rounded-lg text-sm font-bold tracking-widest uppercase border" style={{ borderColor: h.c2, color: h.c2, backgroundColor: `${h.c2}20` }}>
+                                    {h.name}
+                                  </span>
+                                </td>
+                                <td className="p-6 text-right tabular-nums text-white text-xl">
+                                  {(ans.timeMs / 1000).toFixed(2)}s
+                                </td>
+                                <td className="p-6 text-right tabular-nums font-bold text-emerald-400 text-2xl drop-shadow-md">
+                                  +{ans.points}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. QUESTION HOUSE POINTS (VERTICAL BARS) */}
+                {state.questionHousePoints && (
+                  <div 
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-10 animate-fade-in-up"
+                    style={{ animationDelay: '3s', animationFillMode: 'both' }}
+                  >
+                    <h3 className="text-3xl font-[family-name:var(--font-cinzel)] text-gold-bright mb-10 text-center drop-shadow-md tracking-widest uppercase">
+                      🏠 POINTS EARNED — QUESTION {state.questionData.questionNumber}
+                    </h3>
+                    
+                    <div className="flex justify-center items-end gap-6 sm:gap-12 w-full max-w-5xl mx-auto h-64 mt-12">
+                      {(Object.keys(HOUSES) as HouseName[]).map(house => {
+                        const h = HOUSES[house];
+                        const pts = state.questionHousePoints![house] || 0;
+                        
+                        // Find max points for scale
+                        const maxPts = Math.max(1, ...Object.values(state.questionHousePoints || {}));
+                        const percentage = (pts / maxPts) * 100;
+
+                        return (
+                          <div key={house} className="flex flex-col items-center justify-end h-full w-28 sm:w-32">
+                            <div className="text-white font-bold text-4xl drop-shadow-md mb-3" style={{ color: pts > 0 ? h.c2 : '#666' }}>
+                              +{pts}
+                            </div>
+                            <div className="w-full h-full bg-black/60 rounded-t-xl overflow-hidden flex flex-col justify-end border-b-0 border border-white/10 relative">
+                              <div 
+                                className="w-full transition-all duration-1000 ease-out"
+                                style={{ height: `${percentage}%`, backgroundColor: `${h.c2}90` }}
+                              />
+                            </div>
+                            <div 
+                              className="w-full py-4 mt-6 flex flex-col items-center justify-center font-bold text-base sm:text-lg rounded-xl font-[family-name:var(--font-cinzel)] tracking-widest border border-white/10"
+                              style={{ color: h.c2, backgroundColor: `${h.c2}15` }}
+                            >
+                              <div className="w-12 h-12 mb-2">
+                                <svg viewBox="0 0 120 120" dangerouslySetInnerHTML={{ __html: h.crest }} className="w-full h-full drop-shadow-lg opacity-90" />
+                              </div>
+                              {h.name}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

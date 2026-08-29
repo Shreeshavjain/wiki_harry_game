@@ -4,6 +4,8 @@ import Round from "@/lib/models/round";
 import Question from "@/lib/models/question";
 import Participant from "@/lib/models/participant";
 
+import Answer from "@/lib/models/answer";
+
 export async function GET() {
   try {
     await connectDB();
@@ -45,6 +47,10 @@ export async function GET() {
        totalParticipants = await Participant.countDocuments({ round: round.roundNumber });
     }
 
+    let histogram: Record<string, number> | undefined;
+    let fastestAnswers: any[] | undefined;
+    let questionHousePoints: Record<string, number> | undefined;
+
     if ((round.gameState === "LIVE" || round.gameState === "TIME_UP" || round.gameState === "REVEAL") && round.currentQuestion > 0) {
       const q = await Question.findOne({ round: round.roundNumber, questionNumber: round.currentQuestion });
       if (q) {
@@ -57,6 +63,61 @@ export async function GET() {
           option_d: q.option_d,
           ...(round.gameState === "REVEAL" && { correct_option: q.correct_option }),
         };
+
+        if (round.gameState === "REVEAL") {
+          // Calculate histogram, top 5, and house points for the current question
+          const answers = await Answer.find({ 
+            round: round.roundNumber, 
+            questionNumber: round.currentQuestion 
+          }).populate("participantId");
+
+          histogram = { A: 0, B: 0, C: 0, D: 0 };
+          questionHousePoints = { gryffindor: 0, slytherin: 0, ravenclaw: 0, hufflepuff: 0 };
+          const correctAnswersList = [];
+
+          for (const ans of answers) {
+            // Histogram
+            if (histogram[ans.selectedOption] !== undefined) {
+              histogram[ans.selectedOption]++;
+            }
+
+            const participant = ans.participantId as any;
+            if (participant) {
+              // House Points
+              if (ans.pointsAwarded > 0 && questionHousePoints[participant.house] !== undefined) {
+                questionHousePoints[participant.house] += ans.pointsAwarded;
+              }
+
+              // Collect correct answers for Top 5
+              if (ans.isCorrect) {
+                // Calculate response time from server-authoritative timestamps
+                const timeMs = round.questionStartedAt 
+                  ? new Date(ans.createdAt).getTime() - new Date(round.questionStartedAt).getTime()
+                  : 0;
+
+                correctAnswersList.push({
+                  name: participant.name,
+                  usn: participant.usn,
+                  house: participant.house,
+                  points: ans.pointsAwarded,
+                  timeMs: Math.max(0, timeMs),
+                  createdAt: new Date(ans.createdAt).getTime() // For sorting
+                });
+              }
+            }
+          }
+
+          // Sort by actual response time (createdAt) and take Top 5
+          correctAnswersList.sort((a, b) => a.timeMs - b.timeMs);
+          fastestAnswers = correctAnswersList.slice(0, 5).map((a, idx) => ({
+            rank: idx + 1,
+            name: a.name,
+            usn: a.usn,
+            house: a.house,
+            timeMs: a.timeMs,
+            points: a.points
+          }));
+        }
       }
     }
 
@@ -68,7 +129,10 @@ export async function GET() {
       questionEndsAt: round.questionEndsAt,
       questionData,
       counts: round.counts,
-      totalParticipants
+      totalParticipants,
+      ...(histogram && { histogram }),
+      ...(fastestAnswers && { fastestAnswers }),
+      ...(questionHousePoints && { questionHousePoints })
     });
   } catch (error) {
     console.error("Projector state error:", error);

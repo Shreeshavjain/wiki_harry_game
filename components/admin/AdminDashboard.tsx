@@ -26,6 +26,7 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false);
   const [starting, setStarting] = useState(false);
   const [revealing, setRevealing] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -216,6 +217,24 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleNextQuestion() {
+    if (advancing) return;
+    setAdvancing(true);
+    try {
+      const res = await fetch("/api/admin/quiz/next", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to proceed to next question");
+      }
+      await loadData();
+      await fetchAdminQuizState();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setAdvancing(false);
+    }
+  }
+
   return (
     <div className="max-w-[1000px] mx-auto w-full px-4 py-6 pb-20">
       {/* Header */}
@@ -344,12 +363,19 @@ export default function AdminDashboard() {
                  </span>
                </div>
              ) : gameState === "REVEAL" ? (
-               <div className="flex flex-col items-center animate-fade-in">
-                 <div className="text-emerald-400 text-3xl font-bold font-[family-name:var(--font-cinzel)] tracking-widest drop-shadow-md py-4">
-                   🎉 ANSWER REVEALED
-                 </div>
-                 <span className="text-sm text-parchment-dim mt-2">Waiting to proceed to results...</span>
-               </div>
+                <div className="flex flex-col items-center animate-fade-in">
+                  <div className="text-emerald-400 text-3xl font-bold font-[family-name:var(--font-cinzel)] tracking-widest drop-shadow-md py-4">
+                    🎉 ANSWER REVEALED
+                  </div>
+                  <button 
+                    className={`btn-magic text-xl py-4 px-12 mt-4 shadow-[0_0_25px_rgba(201,162,39,0.5)] ${advancing ? 'opacity-80 cursor-wait' : ''}`}
+                    onClick={handleNextQuestion}
+                    disabled={advancing}
+                  >
+                    {advancing ? "ADVANCING..." : "▶ NEXT QUESTION"}
+                  </button>
+                  <span className="text-sm text-parchment-dim mt-4">Proceed to the next question</span>
+                </div>
              ) : gameState === "PAUSED" ? (
                <div className="flex flex-col items-center">
                  <button className="btn-magic text-xl py-4 px-12 shadow-[0_0_20px_rgba(57,255,20,0.3)]" onClick={handleResumeQuiz}>
@@ -378,6 +404,16 @@ export default function AdminDashboard() {
                   disabled={uploading || gameState === "LIVE" || gameState === "COMPLETED" || gameState === "PAUSED" || gameState === "TIME_UP" || gameState === "REVEAL"}
                 >
                   {uploading ? "Uploading..." : "⬆ UPLOAD QUESTIONS"}
+                </button>
+
+                <div className="w-px h-8 bg-white/10 hidden sm:block mx-1"></div>
+
+                {/* Open Projector */}
+                <button 
+                  className="small-btn bg-purple-900/50 border-purple-500/50 text-purple-300 hover:bg-purple-800/80"
+                  onClick={() => window.open('/projector', '_blank')}
+                >
+                  📺 OPEN PROJECTOR
                 </button>
 
                 <div className="w-px h-8 bg-white/10 hidden sm:block mx-1"></div>
