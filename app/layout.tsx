@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cinzel, Cinzel_Decorative, EB_Garamond } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const cinzel = Cinzel({
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-dvh font-[family-name:var(--font-garamond)]">
         {children}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
